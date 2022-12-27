@@ -3,7 +3,7 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
-#include "SA2programming\UsercallFunctionHandler.h"//to remember: check mods for compatibile
+#include "SA2programming\UsercallFunctionHandler.h"//to remember: check mods for compatible
 #include "shadd.h"
 
 #ifdef _DEBUG
