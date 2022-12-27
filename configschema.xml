@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<ConfigSchema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.sonicretro.org">
+  <Groups>
+    <Group name="Balance Multipliers" display="Balance Options">
+      <Property name="ringMultiplier" type="multiplier" defaultvalue="1" display="Ring Gain">
+        <HelpText>Multiplier for the ring generation inside chao gardens (and race)</HelpText>
+      </Property>
+      <Property name="statMultiplier" type="multiplier" defaultvalue="1" display="Stat Gain">
+        <HelpText>Multiplier for the stat growth of chao</HelpText>
+      </Property>
+      <Property name="experienceMultiplier" type="multiplier" defaultvalue="1" display="Experience Multiplier">
+        <HelpText>Multiplier for experience gained.  Increase to reduce animal farming.</HelpText>
+      </Property>
+      <Property name="animalMultiplier" type="multiplier" defaultvalue="1" display="Animal Effect">
+        <HelpText>Multiplier for the effect of animals</HelpText>
+      </Property>
+      <Property name="driveMultiplier" type="multiplier" defaultvalue="1" display="Chaos Drive Effect">
+        <HelpText>Multiplier for the effect of chaos drives</HelpText>
+      </Property>
+    </Group>
+    <Group name="QoL Options" display="Quality of Life Modes">
+      <Property name="enableAllGardens" type="bool" defaultvalue="False" display="Affect All Gardens">
+        <HelpText>Stat gain on Chao that aren't slotted in the current garden</HelpText>
+      </Property>
+    </Group>
+  </Groups>
+  <Enums>
+    <Enum name="multiplier">
+      <EnumMember name="3.0" display="300%"></EnumMember>
+      <EnumMember name="2.5" display="250%"></EnumMember>
+      <EnumMember name="2" display="200%"></EnumMember>
+      <EnumMember name="1.5" display="150%"></EnumMember>
+      <EnumMember name="1" display="100% (Default)"></EnumMember>
+      <EnumMember name="0.5" display="50%"></EnumMember>
+      <EnumMember name="0" display="0% (Disabled)"></EnumMember>
+    </Enum>
+  </Enums>
+</ConfigSchema>
