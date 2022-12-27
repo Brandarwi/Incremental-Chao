@@ -9,7 +9,7 @@
 
 // add headers that you want to pre-compile here
 #include "framework.h"
-#include "SA2programming\SA2ModLoader.h"
-//#include "shadd.h"
+#include "..\SA2programming\SA2ModLoader.h"
+#include "..\UserHeaders\shadd.h"
 
 #endif //PCH_H

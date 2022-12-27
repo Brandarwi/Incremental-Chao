@@ -1,10 +1,12 @@
-#include "pch.h"
 #include <string>
 #include <sstream>
 #include <fstream>
 #include <cmath>
-#include "SA2programming\UsercallFunctionHandler.h"//to remember: check mods for compatible
-#include "shadd.h"
+#include "..\Foundation\pch.h"
+//#include "..\SA2programming\UsercallFunctionHandler.h"//to remember: check mods for compatible
+//#include "UserHeaders\shadd.h"
+
+
 
 #ifdef _DEBUG
 #define DEBUGX(x) x;
@@ -21,6 +23,7 @@ extern "C" {
 	bool dummy = false;
 	int debugFrame = 0;
 	int debugInterval = 75;
+	int test = 0;
 
 	//config options
 	double ringMult = 1.0, statMult = 1.0, xpMult = 1.0, animalMult = 1.0, driveMult = 1.0;
