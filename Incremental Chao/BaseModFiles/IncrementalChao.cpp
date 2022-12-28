@@ -1,12 +1,27 @@
+#include "..\Foundation\pch.h"
+
+//should be identical to pch.h until another source file is made.
 #include <string>
 #include <sstream>
 #include <fstream>
 #include <cmath>
-#include "..\Foundation\pch.h"
-//#include "..\SA2programming\UsercallFunctionHandler.h"//to remember: check mods for compatible
-//#include "UserHeaders\shadd.h"
 
+//#include "..\SA2programming\ninja.h"
+//#include "..\SA2programming\njdef.h"//ninja.h //WEIRD FILE DOES NOT COMPILE
 
+//#include "..\SA2programming\MemAccess.h"
+//#include "..\SA2programming\FunctionHook.h"//MemAccess.h
+//#include "..\SA2programming\UsercallFunctionHandler.h"//MemAccess.h
+//#include "..\SA2programming\magic.h"//MemAccess.h, SA2Structs.h
+
+#include "..\SA2programming\SA2Enums.h"//ninja.h
+#include "..\SA2programming\SA2Structs.h"//ninja.h, SA2Enums.h
+#include "..\SA2programming\SA2ModInfo.h"//SA2Structs.h
+#include "..\SA2programming\SA2Variables.h"//MemAccess.h, SA2Structs.h
+#include "..\SA2programming\SA2Functions.h"//ninja.h, MemAccess.h, SA2Enums.h, SA2Structs.h
+#include "..\SA2programming\SA2ModLoader.h"// Brandarwi ninja.h.  (old)MemAccess.h, SA2Enums.h, SA2Structs.h, SA2ModInfo.h, SA2Variables.h, SA2Functions.h
+
+#include "..\UserHeaders\shadd.h"
 
 #ifdef _DEBUG
 #define DEBUGX(x) x;
@@ -24,7 +39,7 @@ extern "C" {
 	int debugFrame = 0;
 	int debugInterval = 75;
 	int test = 0;
-
+	
 	//config options
 	double ringMult = 1.0, statMult = 1.0, xpMult = 1.0, animalMult = 1.0, driveMult = 1.0;
 	bool enableAllGardens = false;
@@ -55,9 +70,9 @@ extern "C" {
 	{
 		// Executed at startup, contains helperFunctions and the path to your mod (useful for getting the config file.)
 		// This is where we override functions, replace static data, etc.
+		DEBUGX(logstream << "Incremental Chao: sizeof(bool): " << sizeof(bool) << "\n";);
+		DEBUGX(logstream << "Incremental Chao: Init config path: " << path << "\n";);
 		
-		DEBUGX(logstream << "Incremental Chao: Init config path: " << path << '\n';);
-
 		//init statMaxes (based on grades)
 		{
 			for (int i = 0; i < 6; i++) {

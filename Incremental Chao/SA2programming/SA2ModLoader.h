@@ -6,14 +6,16 @@
 #endif
 
 #include <WTypes.h>
-#include <cstdint>
-
-#include "MemAccess.h"
-#include "SA2ModInfo.h"
-#include "SA2Enums.h"
-#include "SA2Structs.h"
-#include "SA2Variables.h"
-#include "SA2Functions.h"
+//Brandarwi: a file should include headers of code it uses.  Got rid of "broad" headers that were only used to reduce size of pch.h
+//#include <cstdint>
+#include "ninja.h"//The only include code used in this file and it was assumed from the other includes :(
+//#include "MemAccess.h"
+//#include "SA2ModInfo.h"
+//#include "SA2Enums.h"
+//#include "SA2Structs.h"
+//#include "SA2Variables.h"
+//#include "SA2Functions.h"
+//Brandarwi
 
 static inline void ResizeTextureList(NJS_TEXLIST* texlist, Uint32 count)
 {

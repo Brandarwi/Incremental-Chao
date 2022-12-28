@@ -1,6 +1,9 @@
 #pragma once
 
 #include <stdint.h>
+//Brandarwi
+#include <WTypes.h>
+//Brandarwi
 #include "ninja.h"
 #include "SA2Enums.h"
 

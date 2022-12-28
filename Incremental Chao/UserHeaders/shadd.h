@@ -1,3 +1,7 @@
+#pragma once
+
+#include "..\SA2programming\SA2Structs.h"//temp for CHAO_SAVE_INFO
+
 #define DataRef(TYPE, NAME, ADDR)	  inline TYPE&	     NAME = *(TYPE*)ADDR
 #define DataPtr(TYPE, NAME, ADDR)	  inline TYPE* const NAME =  (TYPE*)ADDR
 #define DataAry(TYPE, NAME, ADDR, NB) typedef TYPE NAME##_t NB; DataRef(NAME##_t, NAME, ADDR)
@@ -8,6 +12,10 @@ typedef signed __int16 sint16;
 typedef unsigned __int16 uint16;
 typedef signed __int8 sint8;
 typedef unsigned __int8 uint8;
+
+//Brandarwi
+//typedef signed __int32 Bool;
+//
 
 struct AL_SHAPE_ELEMENT
 {
@@ -65,4 +73,8 @@ struct AL_RACE_INFO
 };
 
 DataRef(AL_RACE_INFO, RaceInfo, 0x01A0F980);
-DataRef(Bool, chaoWorldIsLoaded, 0x01A5AF0C); // Set to 1 when Chao are loaded from save file
+//DataRef(Bool, chaoWorldIsLoaded, 0x01A5AF0C);
+
+//Brandarwi
+DataRef(sint32, chaoWorldIsLoaded, 0x01A5AF0C);//signed __int32& cwil = *(signed __int32*)0x01A5AF0C;
+//Brandarwi

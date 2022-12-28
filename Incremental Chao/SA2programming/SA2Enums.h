@@ -1,6 +1,10 @@
 #pragma once
 
+//Brandarwi
+#include "ninja.h"
+//Brandarwi
 // SA2 Enums
+
 #define makemask(enumname,membername) enumname##_##membername = (1 << enumname##Bits_##membername)
 #define makemasks(enumname,membername) enumname##s_##membername = (1 << enumname##Bits_##membername)
 

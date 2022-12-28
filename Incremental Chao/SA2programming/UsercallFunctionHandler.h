@@ -1,4 +1,7 @@
 #pragma once
+//Brandarwi
+#include <stdint.h>
+//Brandarwi
 #include "MemAccess.h"
 #include <cassert>
 

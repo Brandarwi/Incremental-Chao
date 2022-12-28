@@ -8,6 +8,9 @@
 #include <vector>
 #include <list>
 #include "MemAccess.h"
+//Brandarwi
+#include "SA2Structs.h"
+//Brandarwi
 
 namespace Magic
 {
