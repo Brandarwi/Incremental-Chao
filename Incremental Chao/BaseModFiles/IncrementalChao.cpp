@@ -32,14 +32,14 @@
 extern "C" {
 	double verifyConfigMult(std::string);
 	void doNothing();
-	
+
 	//debug
 	std::ostringstream logstream;
 	bool dummy = false;
 	int debugFrame = 0;
 	int debugInterval = 75;
 	int test = 0;
-	
+
 	//config options
 	double ringMult = 1.0, statMult = 1.0, xpMult = 1.0, animalMult = 1.0, driveMult = 1.0;
 	bool enableAllGardens = false;
@@ -47,22 +47,41 @@ extern "C" {
 	//Mod Balance/functionality vars
 	int ringFrame = 0;
 	int ringInterval = 360;//60 = 1 second
-	double ringBase = 60.0;
+	double ringBase = 60.0;//frames to get 1 ring
 	double ringLeftover = 0.0;
-	SHADD_AL_TIME* rtime = &RaceInfo.time;//timer!
+
+	shadd::AL_TIME& rtime = shadd::RaceInfo.time;//timer!
+	/*sint8 CourseChallengedLevel[13];
+	sint8 BeginnerClearedLevel[4];
+	sint8 JewelClearedLevel[6];
+	sint8 ChallengeClearedLevel;
+	sint8 HeroClearedLevel;
+	sint8 DarkClearedLevel;*/
 
 	__int16 gardenStatMax[2][7];//The the grade of the stat acts as the index value.  [0][x] for standard, [1][x] for run (x grade CWE)
 	__int16 gardenStatMaxLI[9] = { 0 };//Luck, Intelligence can't pass 4000 so it needs a few more indexes.  [8] hits the hard cap.
 
 	int changeChaoFrame = 0;
 	int changeChaoInterval = 240;//60 = 1 second, minimum working value 16
-	double statBase = 432000;//60 fps * 60s/min * 60min/h * 2h = 432000 frame
+	double statBase = 432000;//60 fps * 60s/min * 60min/h * 2h = 432000 frames to get max stat from 0
 	double statLeftovers[24][8] = { 0 };
 
 	//persistent data vars
 	char gardenStatLevels[8] = { 0 };
-	int gardenStatFractions[8] = { 0 };
-	
+	//int gardenStatFractions[8] = { 0 };
+
+	__int16 gardenMedals = 0;
+	/*medals (1 = 0000 0000 0000 0001, 2 = 0000 0000 0000 0010)
+	* 1=	challenge
+	* 2=	beginner
+	* 4=	hero
+	* 8=	dark
+	* 16=	aquamarine
+	* 32=	topaz
+	* 64=	peridot
+	* 128=	garnet
+	* 256=	onyx
+	* 512=	diamond*/
 	bool gardenHasBeginnerMedal = false;
 	bool loadedgardenIncrementData = false;
 
@@ -72,7 +91,7 @@ extern "C" {
 		// This is where we override functions, replace static data, etc.
 		DEBUGX(logstream << "Incremental Chao: sizeof(bool): " << sizeof(bool) << "\n";);
 		DEBUGX(logstream << "Incremental Chao: Init config path: " << path << "\n";);
-		
+
 		//init statMaxes (based on grades)
 		{
 			for (int i = 0; i < 6; i++) {
@@ -150,7 +169,7 @@ extern "C" {
 		logstream << "Incremental Chao: animalMult: " << animalMult << '\n';
 		logstream << "Incremental Chao: driveMult: " << driveMult << '\n';
 		logstream << "Incremental Chao: enableAllGardens: " << enableAllGardens << '\n';
-		
+
 		if (!logstream.str().empty()) {
 			PrintDebug(logstream.str().c_str());
 			logstream.str("");
@@ -164,44 +183,33 @@ extern "C" {
 		const int chaoAreaID = GetCurrentChaoStage();
 		//DEBUGX(logstream << "Incremental Chao: chaoAreaID: " << chaoAreaID << "\n";);
 
-		if (chaoWorldIsLoaded && !loadedgardenIncrementData) {//Entering chao world, get data (HACKY, TO BE FIXED?) (init, part 1)
+		if (shadd::chaoWorldIsLoaded && !loadedgardenIncrementData) {//Entering chao world, get data (HACKY, TO BE FIXED?) (init, part 1)
 			for (int iterChaoSlots = 0; iterChaoSlots < 24; ++iterChaoSlots) {
-				//ChaoDataBase& ccd = ChaoSlots[iterChaoSlots].data;
-				for (int iterStatLevels = 0; iterStatLevels < 8; ++iterStatLevels) {//init stats
-					if (ChaoSlots[iterChaoSlots].data.StatLevels[iterStatLevels] > gardenStatLevels[iterStatLevels]) {
-						gardenStatLevels[iterStatLevels] = ChaoSlots[iterChaoSlots].data.StatLevels[iterStatLevels];//set garden level
-						gardenStatFractions[iterStatLevels] = 100 * gardenStatLevels[iterStatLevels] + ChaoSlots[iterStatLevels].data.StatPoints[7]; //fraction includes saved
-					}
-				}
-				if (!gardenHasBeginnerMedal && ChaoSlots[iterChaoSlots].data.DoctorMedal & 2) gardenHasBeginnerMedal = true;//init medal
+				gardenMedals = gardenMedals | ChaoSlots[iterChaoSlots].data.DoctorMedal;
 			}
-			DEBUGX(
-				for (int i = 0; i < 8; i++) {
-					logstream << "Incremental Chao: " << i << ":" << gardenStatFractions[i] << "\n";
-				}
-			);
+			if (gardenMedals & 2) gardenHasBeginnerMedal = true;//init medal
 			loadedgardenIncrementData = true;
 			logstream << "Incremental Chao: garden loaded.\n";
 		}
-		else if (!chaoWorldIsLoaded && loadedgardenIncrementData) {
-			for (int iterStatLevels = 0; iterStatLevels < 8; ++iterStatLevels) {//unload persistent data
+		else if (!shadd::chaoWorldIsLoaded && loadedgardenIncrementData) {
+			for (int iterStatLevels = 0; iterStatLevels < 7; ++iterStatLevels) {//unload persistent data
 				gardenStatLevels[iterStatLevels] = 0;
-				gardenStatFractions[iterStatLevels] = 0;
-				gardenHasBeginnerMedal = false;
 			}
+			gardenMedals = 0;
+			gardenHasBeginnerMedal = false;
 			loadedgardenIncrementData = false;
 			logstream << "Incremental Chao: garden unloaded.\n";
 		}
 
-		if (chaoWorldIsLoaded && GameState == GameStates_Ingame) {
-			
+		if (shadd::chaoWorldIsLoaded && GameState == GameStates_Ingame) {
+
 			if (ringFrame == ringInterval - 1) {//ring loop
-				bool isRacing = (chaoAreaID == 4 && (rtime->frame || rtime->second || rtime->minute));
+				bool isRacing = (chaoAreaID == 4 && (rtime.frame || rtime.second || rtime.minute));
 				//DEBUGX(logstream << "Incremental Chao: rtime: " << static_cast<int>(rtime->frame) << ":" << static_cast<int>(rtime->second) << ":" << static_cast<int>(rtime->minute) << "\n";);
-				
+
 				//if rings are not maxed, increment them to threshold
 				if (TotalRings < 9999999) {
-					double preciseRings = ringInterval / ringBase * (1.0 + static_cast<double>(isRacing)) 
+					double preciseRings = ringInterval / ringBase * (1.0 + static_cast<double>(isRacing))
 						* (1.0 + static_cast<double>(gardenHasBeginnerMedal)) * ringMult + ringLeftover;
 					int incrementRings = static_cast<int>(preciseRings);
 					if (TotalRings + incrementRings < 9999999) {
@@ -216,67 +224,164 @@ extern "C" {
 			}
 			ringFrame += 1;
 			ringFrame = ringFrame % ringInterval;
-			
+
 			//detect changes on every odd sixteenth of an interval, increment chao on every even sixteenth of an interval
-			bool detectConditionFrame = detectConditionFrame = fmod(static_cast<double>(changeChaoFrame + 1), (static_cast<double>(changeChaoInterval) / 16.0)) < 1.0;
+			//bool detectConditionFrame = fmod(static_cast<double>(changeChaoFrame + 1), (static_cast<double>(changeChaoInterval) / 16.0)) < 1.0;
 			bool incrementConditionFrame = fmod(static_cast<double>(changeChaoFrame + 1), (static_cast<double>(changeChaoInterval) / 8.0)) < 1.0;
-			
-			if (chaoAreaID <= 4 && 1 <= chaoAreaID) {
-				if (detectConditionFrame && !incrementConditionFrame) {
-					DEBUGX(logstream << "Incremental Chao: detectConditionFrame: " << changeChaoFrame << "\n";);
+			//example: inter 101, frame 23.  (23+1) - (101/8)* floor( (23+1)/(101/8)) = 24 - 12.625 * floor(24/12.625) = 24 - 12.625 > 1
+			//(25 + 1) - (101 / 8) * floor((25 + 1) / (101 / 8)) = 26 - 12.625 * floor(26 / 12.625) = 26 - 12.625 * 2 = 26 - 25.25 < 1
+			//so FLY stat on frame 25.
 
-					//Part 2 HACKY JANKY
-					//detect changes to chao status and forward to garden data (handle animals and chaos drives)
-					for (int iterChaoSlots = 0; iterChaoSlots < 24; ++iterChaoSlots) {
-						ChaoDataBase* ccdp = &ChaoSlots[iterChaoSlots].data;//ccdp = current chao data pointer
-						if (!gardenHasBeginnerMedal && (*ccdp).DoctorMedal & 2) gardenHasBeginnerMedal = true;//detect medal
+			if (chaoAreaID <= 4 && 1 <= chaoAreaID && incrementConditionFrame) {
 
-						//init fractions on chao
-						char* ccdfracAddrs[7];
-						ccdfracAddrs[0] = &(*ccdp).SwimFraction;
-						ccdfracAddrs[1] = &(*ccdp).FlyFraction;
-						ccdfracAddrs[2] = &(*ccdp).RunFraction;
-						ccdfracAddrs[3] = &(*ccdp).PowerFraction;
-						ccdfracAddrs[4] = &(*ccdp).StaminaFraction;
-						ccdfracAddrs[5] = &(*ccdp).LuckyFraction;
-						ccdfracAddrs[6] = &(*ccdp).IntelligenceFraction;
-
-						//find and forward changes to stat fractions and levels
-						for (int iterChaoStats = 0; iterChaoStats < 7; ++iterChaoStats) {//loop stat type
-							//check to change garden level if chao are modified in editor
-							if ((*ccdp).StatLevels[iterChaoStats] > gardenStatLevels[iterChaoStats]) {
-								gardenStatLevels[iterChaoStats] = (*ccdp).StatLevels[iterChaoStats];
-								gardenStatFractions[iterChaoStats] = static_cast<int>(gardenStatLevels[iterChaoStats]) * 100;
-							}
-							int addVal = static_cast<int>(xpMult * static_cast<double>(*ccdfracAddrs[iterChaoStats]));
-
-							gardenStatFractions[iterChaoStats] = gardenStatFractions[iterChaoStats] + addVal > 9999
-								? 9999 : gardenStatFractions[iterChaoStats] + addVal;//add fraction to garden stats
-
-							ChaoSlots[iterChaoStats].data.StatPoints[7] = static_cast<__int16>(gardenStatFractions[iterChaoStats] % 100);//set fraction to save
-							*ccdfracAddrs[iterChaoStats] = 0;//set chao fraction to 0
-							gardenStatLevels[iterChaoStats] = gardenStatFractions[iterChaoStats] / 100;//correct garden level
-							(*ccdp).StatLevels[iterChaoStats] = gardenStatLevels[iterChaoStats];//update chao level
-						}
-
-					}
-					//DEBUGX(logstream << "Incremental Chao: doctormedal on chao0: " << static_cast<int>(ChaoSlots[0].data.DoctorMedal) << "\n";);
-					//DEBUGX(logstream << "Incremental Chao: beginnermedal: " << static_cast<int>(gardenHasBeginnerMedal) << "\n";);
+				DEBUGX(logstream << "Incremental Chao: incrementConditionFrame: " << changeChaoFrame << "\n";);
+				DEBUGX(
+					logstream << "Incremental Chao\n";
+				for (int dri = 0; dri < 6; dri++) {
+					logstream << "RaceActiveFlag[" << dri << "]: " << static_cast<int>(shadd::RaceInfo.RaceActiveFlag[dri]) << "\n";
 				}
-			}
-			if (chaoAreaID <= 3 && 1 <= chaoAreaID) {//chao loop only in gardens
-				if (incrementConditionFrame) {
-					DEBUGX(logstream << "Incremental Chao: incrementConditionFrame: " << changeChaoFrame << "\n";);
+				for (int dri = 0; dri < 13; dri++) {
+					logstream << "CourseChallengedLevel[" << dri << "]: " << static_cast<int>(shadd::RaceInfo.CourseChallengedLevel[dri]) << "\n";
+				}
+				for (int dri = 0; dri < 4; dri++) {
+					logstream << "BeginnerClearedLevel[" << dri << "]: " << static_cast<int>(shadd::RaceInfo.BeginnerClearedLevel[dri]) << "\n";
+				}
+				for (int dri = 0; dri < 6; dri++) {
+					logstream << "JewelClearedLevel[" << dri << "]: " << static_cast<int>(shadd::RaceInfo.JewelClearedLevel[dri]) << "\n";
+				}
+				logstream << "ChallengeClearedLevel: " << static_cast<int>(shadd::RaceInfo.ChallengeClearedLevel) << "\n";
+				logstream << "HeroClearedLevel: " << static_cast<int>(shadd::RaceInfo.HeroClearedLevel) << "\n";
+				logstream << "DarkClearedLevel: " << static_cast<int>(shadd::RaceInfo.DarkClearedLevel) << "\n";
+				logstream << "End Incremental Chao\n";
+				);
+
+				shadd::AL_RACE_INFO& races = shadd::RaceInfo;
+
+				//Part 2 HACKY JANKY
+				for (int iterChaoStats = 0; iterChaoStats < 7; ++iterChaoStats) {
+					switch (iterChaoStats) {
+					case 0:
+					case 1:
+					case 2:
+					case 3:
+						gardenStatLevels[iterChaoStats] = 4;//4 freebie, 84 total
+						gardenStatLevels[iterChaoStats] += races.BeginnerClearedLevel[iterChaoStats] >= 0 ? (races.BeginnerClearedLevel[iterChaoStats] + 1) * 5 : 0;//3 * 5
+						gardenStatLevels[iterChaoStats] += races.JewelClearedLevel[iterChaoStats] >= 0 ? (races.JewelClearedLevel[iterChaoStats] + 1) * 4 : 0;//5 * 4
+						gardenStatLevels[iterChaoStats] += races.JewelClearedLevel[5] >= 0 ? (races.JewelClearedLevel[5] + 1) : 0;//5
+						gardenStatLevels[iterChaoStats] += races.ChallengeClearedLevel >= 0 ? (races.ChallengeClearedLevel + 1) * 2 : 0;//12 * 2
+						gardenStatLevels[iterChaoStats] += races.HeroClearedLevel >= 0 ? (races.HeroClearedLevel + 1) * 2 : 0;//4 * 2
+						gardenStatLevels[iterChaoStats] += races.DarkClearedLevel >= 0 ? (races.DarkClearedLevel + 1) * 2 : 0;//4 * 2
+						break;
+					case 4:
+						gardenStatLevels[iterChaoStats] = 2;//2 freebie, 84 total
+						for (int stabegi = 0; stabegi < 4; stabegi++) {
+							gardenStatLevels[iterChaoStats] += races.BeginnerClearedLevel[stabegi] >= 0 ? (races.BeginnerClearedLevel[stabegi] + 1) : 0;//12
+						}
+						for (int stajewi = 0; stajewi < 4; stajewi++) {
+							gardenStatLevels[iterChaoStats] += races.JewelClearedLevel[stajewi] >= 0 ? (races.JewelClearedLevel[stajewi] + 1) * 2 : 0;//20 * 2
+						}
+						gardenStatLevels[iterChaoStats] += races.JewelClearedLevel[5] >= 0 ? (races.JewelClearedLevel[5] + 1) * 2 : 0;//5 * 2
+						gardenStatLevels[iterChaoStats] += races.ChallengeClearedLevel >= 0 ? (races.ChallengeClearedLevel + 1) : 0;//12
+						gardenStatLevels[iterChaoStats] += races.HeroClearedLevel >= 0 ? (races.HeroClearedLevel + 1) : 0;//4
+						gardenStatLevels[iterChaoStats] += races.DarkClearedLevel >= 0 ? (races.DarkClearedLevel + 1) : 0;//4
+						break;
+					case 5:
+					case 6:
+						gardenStatLevels[iterChaoStats] = 2;//2 freebie, 84 total
+						for (int stabegi = 0; stabegi < 4; stabegi++) {
+							gardenStatLevels[iterChaoStats] += races.BeginnerClearedLevel[stabegi] >= 0 ? (races.BeginnerClearedLevel[stabegi] + 1) : 0;//12
+						}
+						for (int stajewi = 0; stajewi < 4; stajewi++) {
+							gardenStatLevels[iterChaoStats] += races.JewelClearedLevel[stajewi] >= 0 ? (races.JewelClearedLevel[stajewi] + 1) : 0;//20
+						}
+						gardenStatLevels[iterChaoStats] += races.JewelClearedLevel[4] >= 0 ? (races.JewelClearedLevel[4] + 1) * 4 : 0;//5 * 4
+						gardenStatLevels[iterChaoStats] += races.JewelClearedLevel[5] >= 0 ? (races.JewelClearedLevel[5] + 1) * 2 : 0;//5 * 2
+						gardenStatLevels[iterChaoStats] += races.ChallengeClearedLevel >= 0 ? (races.ChallengeClearedLevel + 1) : 0;//12
+						gardenStatLevels[iterChaoStats] += races.HeroClearedLevel >= 0 ? (races.HeroClearedLevel + 1) : 0;//4
+						gardenStatLevels[iterChaoStats] += races.DarkClearedLevel >= 0 ? (races.DarkClearedLevel + 1) : 0;//4
+						break;
+					}
+					DEBUGX(logstream << "Incremental Chao: Stat Index=Level: " << iterChaoStats << "=" << static_cast<int>(gardenStatLevels[iterChaoStats]) << "\n";);
+				}
+				//detect changes to chao status and forward to garden data (handle animals and chaos drives)
+				for (int iterChaoSlots = 0; iterChaoSlots < 24; ++iterChaoSlots) {
+					ChaoDataBase* ccdp = &ChaoSlots[iterChaoSlots].data;//ccdp = current chao data pointer
+					gardenMedals = gardenMedals | (*ccdp).DoctorMedal;
+					if (gardenMedals & 2) gardenHasBeginnerMedal = true;
+
+					//init fractions on chao
+					char* ccdfracAddrs[7];
+					ccdfracAddrs[0] = &(*ccdp).SwimFraction;
+					ccdfracAddrs[1] = &(*ccdp).FlyFraction;
+					ccdfracAddrs[2] = &(*ccdp).RunFraction;
+					ccdfracAddrs[3] = &(*ccdp).PowerFraction;
+					ccdfracAddrs[4] = &(*ccdp).StaminaFraction;
+					ccdfracAddrs[5] = &(*ccdp).LuckyFraction;
+					ccdfracAddrs[6] = &(*ccdp).IntelligenceFraction;
+					//ccdfracAddrs[7] = &(*ccdp).UnknownFraction;
+
+					//find and forward changes to stat fractions and levels
+					for (int iterChaoStats = 0; iterChaoStats < 7; ++iterChaoStats) {//loop stat type
+						*ccdfracAddrs[iterChaoStats] = 0;//set chao fraction to 0
+					}
+				}
+				DEBUGX(logstream << "Incremental Chao: doctormedal on chao0: " << static_cast<int>(ChaoSlots[0].data.DoctorMedal) << "\n";);
+				//DEBUGX(logstream << "Incremental Chao: beginnermedal: " << static_cast<int>(gardenHasBeginnerMedal) << "\n";);
+				
+				if (chaoAreaID <= 3 && 1 <= chaoAreaID) {//chao loop only in gardens
+					//DEBUGX(logstream << "Incremental Chao: incrementConditionFrame: " << changeChaoFrame << "\n";);
 					//loop activates every eighth of chao interval, hitting each stat once per interval
 					int statIndex = (changeChaoFrame + 1) / (changeChaoInterval / 8) - 1;//example: (89+1)/(360/8)-1 = 90/45-1 = 1, so FLY stat
 
 					//increment stats on chao
-					double timeBalance = statMult * static_cast<double>(changeChaoInterval) / statBase;//to reduce calculations later:
+					double timeBalance = statMult * static_cast<double>(changeChaoInterval) / statBase;//to reduce calculations later (same for each chao)
+					double raceLevelsSpeedBalance = (84.0 + static_cast<double>(gardenStatLevels[statIndex])) / (84.0 * 2);
 					for (int iterChaoSlots = 0; iterChaoSlots < 24; ++iterChaoSlots) {
 						ChaoDataBase* ccdp = &ChaoSlots[iterChaoSlots].data;//ccdp = current chao data pointer
-						
+
 						if ((*ccdp).Type >= 2 && (enableAllGardens || (*ccdp).Garden == chaoAreaID)) {//only bother if chao is not egg, in garden scope
+							//first find chao level as combination of race and animals
 							int threeAnimalsIndex = 0;
+							switch (statIndex) {//get animal loop indexes
+							case 0://swim
+								threeAnimalsIndex = 0;
+								break;
+							case 1://fly
+								threeAnimalsIndex = 9;
+								break;
+							case 2://run
+								threeAnimalsIndex = 3;
+								break;
+							case 3://power
+								threeAnimalsIndex = 6;
+								break;
+							case 4://stamina
+								threeAnimalsIndex = 12;
+								break;
+							case 5://luck
+								threeAnimalsIndex = 15;
+								break;
+							case 6://intelligence
+								threeAnimalsIndex = 18;
+								break;
+							}
+							int statAnimals = 0;//get animals count
+							for (int statAnimalsIndex = threeAnimalsIndex; statAnimalsIndex < threeAnimalsIndex + 3; ++statAnimalsIndex) {
+								if ((*ccdp).SA2AnimalBehavior >> statAnimalsIndex & 1) {
+									statAnimals += 1;
+								}
+							}
+							//set chao level with races and animals and type (child)
+							bool isChildType = false;
+							char tstatLevel = gardenStatLevels[statIndex] + 5 * statAnimals;
+							if ((*ccdp).Type == 2) {//children are capped at 30 (5 each for animal + beginner races and use 30 for stam/luck/int too)
+								(*ccdp).StatLevels[statIndex] = tstatLevel > 30 ? 30 : tstatLevel;
+								isChildType = true;
+							}
+							else {
+								(*ccdp).StatLevels[statIndex] = gardenStatLevels[statIndex] + 5 * statAnimals;//set chao level with race and animals
+							}
+
 							int gradeIndex;//the index in the table for getting the value of the max a stat can be
 							double statMax = 0.0;
 
@@ -287,57 +392,33 @@ extern "C" {
 							else {//special case Luck, Intelligence
 								gradeIndex = (*ccdp).StatGrades[statIndex] <= 7 ? (*ccdp).StatGrades[statIndex] : 8;
 							}
+							switch (statIndex) {//set stat max
+							case 0:
+							case 1:
+							case 3:
+							case 4:
+								statMax = gardenStatMax[0][gradeIndex] * (static_cast<double>((*ccdp).StatLevels[statIndex]) + 1.0) / 100.0;
+								break;
+							case 2:
+								statMax = gardenStatMax[1][gradeIndex] * (static_cast<double>((*ccdp).StatLevels[statIndex]) + 1.0) / 100.0;
+								break;
+							case 5:
+							case 6:
+								statMax = gardenStatMaxLI[gradeIndex] * (static_cast<double>((*ccdp).StatLevels[statIndex]) + 1.0) / 100.0;
+								break;
+							}
+							DEBUGX(logstream << "Incremental Chao: Slot[" << iterChaoSlots << "]: maxStat[" << statIndex << "]=" << statMax << "\n";);
 
-							switch (statIndex) {//get max stat point from index, animal loop indexes
-							case 0://swim
-								threeAnimalsIndex = 0;
-								statMax = gardenStatMax[0][gradeIndex] * (static_cast<double>(gardenStatLevels[0]) + 1.0) / 100.0;
-								DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: statMax swim: " << statMax << "\n";);
-								break;
-							case 1://fly
-								threeAnimalsIndex = 9;
-								statMax = gardenStatMax[0][gradeIndex] * (static_cast<double>(gardenStatLevels[1]) + 1.0) / 100.0;
-								DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: statMax fly: " << statMax << "\n";);
-								break;
-							case 2://run
-								threeAnimalsIndex = 3;
-								statMax = gardenStatMax[1][gradeIndex] * (static_cast<double>(gardenStatLevels[2]) + 1.0) / 100.0;
-								DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: statMax run: " << statMax << "\n";);
-								break;
-							case 3://power
-								threeAnimalsIndex = 6;
-								statMax = gardenStatMax[0][gradeIndex] * (static_cast<double>(gardenStatLevels[3]) + 1.0) / 100.0;
-								DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: statMax power: " << statMax << "\n";);
-								break;
-							case 4://stamina
-								threeAnimalsIndex = 12;
-								statMax = gardenStatMax[0][gradeIndex] * (static_cast<double>(gardenStatLevels[4]) + 1.0) / 100.0;
-								DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: statMax stamina: " << statMax << "\n";);
-								break;
-							case 5://luck
-								threeAnimalsIndex = 15;
-								statMax = gardenStatMaxLI[gradeIndex] * (static_cast<double>(gardenStatLevels[5]) + 1.0) / 100.0;
-								DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: statMax luck: " << statMax << "\n";);
-								break;
-							case 6://intelligence
-								threeAnimalsIndex = 18;
-								statMax = gardenStatMaxLI[gradeIndex] * (static_cast<double>(gardenStatLevels[6]) + 1.0) / 100.0;
-								DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: statMax intelligence: " << statMax << "\n";);
-								break;
-							}
-							int statAnimals = 0;//get animals
-							for (int statAnimalsIndex = threeAnimalsIndex; statAnimalsIndex < threeAnimalsIndex + 3; ++statAnimalsIndex) {
-								if ((*ccdp).SA2AnimalBehavior >> statAnimalsIndex & 1) statAnimals += 1;
-							}
 							double preciseStatGain = 0.0;//get the gain for stat
-							DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: ccdp.SP[si], statMax: " << (*ccdp).StatPoints[statIndex] << ", " << static_cast<int>(statMax) << "\n";);
 							if ((*ccdp).StatPoints[statIndex] != static_cast<int>(statMax)) {
 								//Base calculation is 2 hours, so for when garden is not at max rate will take longer
-								preciseStatGain = ((1633.0 + (*ccdp).StatGrades[statIndex] * 980.0 / 3.0)) * timeBalance
-									* (1.0 + static_cast<double>(statAnimals) / 3.0 + static_cast<double>(gardenHasBeginnerMedal)) / 3.0 + statLeftovers[iterChaoSlots][statIndex];
+								double gradeSpeedBalance = ((1633.0 + (*ccdp).StatGrades[statIndex] * 980.0 / 3.0));//faster at higher grades (
+								double animalSpeedBalance = (1.0 + static_cast<double>(statAnimals)) / 4.0;
+								double isChildSpeedBalance = (1.0 + static_cast<double>(isChildType)) / 2.0;
+								preciseStatGain = raceLevelsSpeedBalance * timeBalance * gradeSpeedBalance * animalSpeedBalance * isChildSpeedBalance + statLeftovers[iterChaoSlots][statIndex];
 
 								int incrementStat = static_cast<int>(preciseStatGain);
-								
+
 								if (incrementStat + (*ccdp).StatPoints[statIndex] >= static_cast<int>(statMax)) {
 									(*ccdp).StatPoints[statIndex] = static_cast<int>(statMax);
 									statLeftovers[iterChaoSlots][statIndex] = 0.0;
@@ -350,27 +431,26 @@ extern "C" {
 									//set chao level as percent of maxStat (requires save data in unused fields!), make garden levels stored elsewhere
 									//would require redundancy as unused fields are reset on chao deletion/creation
 								}
-								DEBUGX(if (iterChaoSlots == 0) logstream << "Incremental Chao: preciseStatGain, leftover: " << preciseStatGain << ", " << statLeftovers[iterChaoSlots][statIndex] << "\n";);
+								DEBUGX(logstream << "Incremental Chao: preciseStatGain, leftover: [" << iterChaoSlots << "] " << preciseStatGain << ", " << statLeftovers[iterChaoSlots][statIndex] << "\n";);
 							}
 						}
 					}
 				}
-				changeChaoFrame += 1;
-				changeChaoFrame %= changeChaoInterval;
 			}
-			
-			DEBUGX(
-				if (chaoAreaID == 4 && debugFrame == debugInterval - 1) {
-					//logstream << "Incremental Chao: TimerStopped: " << static_cast<int>(TimerStopped) << "\n";
-				}
-				debugFrame += 1;
-				debugFrame %= debugInterval;
-			);
+			changeChaoFrame += 1;
+			changeChaoFrame %= changeChaoInterval;
 
-			if (!logstream.str().empty()) {
-				PrintDebug(logstream.str().c_str());
-				logstream.str("");
-			}
+			//DEBUGX(
+			//	if (debugFrame == debugInterval - 1) {
+			//		//logstream << "Incremental Chao: : " << static_cast<int>() << "\n";
+			//	}
+			//debugFrame += 1;
+			//debugFrame %= debugInterval;
+			//);
+		}
+		if (!logstream.str().empty()) {
+			PrintDebug(logstream.str().c_str());
+			logstream.str("");
 		}
 	}
 

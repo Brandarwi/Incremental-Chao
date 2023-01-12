@@ -1,7 +1,7 @@
 Incremental Chao
 By Brandarwi
-v0.1.2AR
-(alpha release, 0.1 in mod.ini)
+v0.2.1
+alpha release
 
 This mod drastically changes chao levels and stats progression.
 DO NOT use on your regular chao save without a backup.
@@ -10,17 +10,16 @@ Or use a new chao save.
 This mod passively generates rings and stats for your chaos.  The leveling up process is rebalanced so that gameplay is focused more on playing with the chaos rather than farming animals and grinding level 99.
 
 How it works:
-The stat cap is indicated by the level on the chao.  The level is the percentage of the max.  It can be increased by leveling with animals and drives.
-Leveling is permanent!
-Stat generation can be increased by getting a beginner medal and feeding different animals to each chao.
+The maximum stat a chao can reach is determined by its grade and level.  Example: A chao with E grade swim and level 49 will reach 1633 * (49 + 1)% = 816 as its current stat max.
+Gain levels by giving animals to chao and by racing.  This will also increase the speed with which chao gain stats.
 Ring generation is affected by beginner medal and is doubled while chao is racing.
 
 Options:
 Ring multiplier: can increase ring generation rate, or turn it off.
 Stat multiplier: can increase chao stat generation rate, or turn it off. Or turn it up if enable all gardens is off.
-Experience multiplier: increase the amount of experience chao get (from animals and drives)
 Enable All Gardens: All chao will generate stats, regardless of the garden you are playing in. (might reduce performance, testing needed)
 Animal and Drive: not implemented.
+Experience multiplier: removed.
 
 Compatibility:
 Should work with CWExtended/x grades.
@@ -31,14 +30,23 @@ And the editor.
 
 Alpha notes:
 Performance may not be the best on this release because I used a workaround method until I figure out some of the more complicated modding stuff.
-Feedback on balance is appreciated.
-The loop runs every half a second, so if you make an xp change and exit the garden within that time frame it won't save.
-For correct saving, temporarily for the alpha version the mod uses the 8th chao stat (not in vanilla).  Other mods that use that data will be incompatible (CWE and ECW are fine, there probably aren't any mods that use it)
+Feedback on balance is appreciated. 0.1.2 had too fast balance, so for 0.2.1 I slowed it down a lot before animals.
+TODO:
+Implement more medals
+(waiting) rework actual animal/drive functions and race completion instead of checking every frame interval
 
 INSTALLATION:
 get the SA2Modloader and put this with the rest in ..\Sonic Adventure 2\mods\Incremental Chao
 
-Credits:
+Additional Credits:
 Shaddatic for file shadd.h
 
 Want to make a custom version of this mod?  Source available at https://github.com/Brandarwi/Incremental-Chao
+
+Change Log:
+0.2.1 {
+	Balance: Chao will have some levels individually from animals.  Most levels come from races and affect ALL chao.  Progress made on previous version may be undone.
+	Balance: Capped level of children, slowed early game stat rate.
+	There is no experience anymore.  As a consequence food and chaos drives currently have no effect on stats.
+	Removed the temporary addition of saving data in the vanilla unused stat slot.  It was used to save experience fractions which I removed in this version.
+}
